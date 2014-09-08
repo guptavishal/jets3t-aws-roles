@@ -58,6 +58,8 @@ public abstract class ProviderCredentials {
     protected String secretKey = null;
     protected String friendlyName = null;
 
+    public ProviderCredentials(){ }
+
     /**
      * Construct credentials.
      *
@@ -411,5 +413,20 @@ public abstract class ProviderCredentials {
             }
         }
     }
+
+    /**
+     * Gets the current session token
+     * @return
+     * the current session token
+     */
+    public String getSessionToken() { return null; }
+
+
+    /**
+     * Refreshes the credentials if needed
+     * @return
+     * the current provider credentials
+     */
+    public ProviderCredentials refreshAndGetCredentials()  { return this; }
 
 }

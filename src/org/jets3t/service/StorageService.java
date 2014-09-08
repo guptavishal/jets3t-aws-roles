@@ -290,7 +290,7 @@ public abstract class StorageService {
      * @return the credentials identifying the service user, or null for anonymous.
      */
     public ProviderCredentials getProviderCredentials() {
-        return credentials;
+        return credentials.refreshAndGetCredentials() ;
     }
 
     /**

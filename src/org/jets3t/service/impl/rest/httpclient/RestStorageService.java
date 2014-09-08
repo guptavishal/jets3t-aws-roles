@@ -68,6 +68,7 @@ import org.jets3t.service.model.StorageBucketLoggingStatus;
 import org.jets3t.service.model.StorageObject;
 import org.jets3t.service.model.StorageOwner;
 import org.jets3t.service.mx.MxDelegate;
+import org.jets3t.service.security.AWSRoleSessionCredentials;
 import org.jets3t.service.security.ProviderCredentials;
 import org.jets3t.service.utils.Mimetypes;
 import org.jets3t.service.utils.RestUtils;
@@ -639,10 +640,11 @@ public abstract class RestStorageService extends StorageService implements JetS3
     public void authorizeHttpRequest(HttpUriRequest httpMethod, HttpContext context)
             throws ServiceException
     {
-        if (getProviderCredentials() != null) {
+        ProviderCredentials providerCredentials = getProviderCredentials();
+        if (providerCredentials != null) {
             if (log.isDebugEnabled()) {
                 log.debug("Adding authorization for Access Key '"
-                    + getProviderCredentials().getAccessKey() + "'.");
+                    + providerCredentials.getAccessKey() + "'.");
             }
         } else {
             if (log.isDebugEnabled()) {
@@ -654,6 +656,16 @@ public abstract class RestStorageService extends StorageService implements JetS3
         URI uri = httpMethod.getURI();
         String hostname = uri.getHost();
 
+        // Set the session token from Temporary Security (Session) Credentials
+        // NOTE: a session token will override any DevPay credential values set above.
+        if (providerCredentials.getSessionToken() != null) {
+          String sessionToken = providerCredentials.getSessionToken();
+          httpMethod.setHeader(Constants.AMZ_SECURITY_TOKEN, sessionToken);
+          if (log.isDebugEnabled()) {
+            log.debug("Including AWS session token in request: "
+                    + Constants.AMZ_SECURITY_TOKEN + "=" + sessionToken);
+          }
+        }
         /*
          * Determine the complete URL for the S3 resource, including any S3-specific parameters.
          */
@@ -710,11 +722,11 @@ public abstract class RestStorageService extends StorageService implements JetS3
 
         // Sign the canonical string.
         String signedCanonical = ServiceUtils.signWithHmacSha1(
-            getProviderCredentials().getSecretKey(), canonicalString);
+                providerCredentials.getSecretKey(), canonicalString);
 
         // Add encoded authorization to connection as HTTP Authorization header.
         String authorizationString = getSignatureIdentifier() + " "
-            + getProviderCredentials().getAccessKey() + ":" + signedCanonical;
+            + providerCredentials.getAccessKey() + ":" + signedCanonical;
         httpMethod.setHeader("Authorization", authorizationString);
     }
 
